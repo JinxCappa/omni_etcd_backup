@@ -1,15 +1,15 @@
-FROM gcr.io/etcd-development/etcd:v3.5.16 as etcd
+FROM gcr.io/etcd-development/etcd:v3.5.15 AS etcd
 
-FROM alpine:3.20.3 as builder
+FROM alpine:3.20.2 AS builder
 
 RUN apk add --no-cache wget
 
 RUN wget https://github.com/Backblaze/B2_Command_Line_Tool/releases/latest/download/b2-linux -O /usr/local/bin/b2 && \
   chmod +x /usr/local/bin/b2
 
-FROM alpine:3.20.3
-LABEL maintainer="Sonic <sonic@djls.io>"
-LABEL org.opencontainers.image.source=https://github.com/justereseau/omni_etcd_backup
+FROM builder
+LABEL maintainer="Eddie <jinyx007@gmail.com>"
+LABEL org.opencontainers.image.source=https://github.com/jinxcappa/omni_etcd_backup
 LABEL org.opencontainers.image.description="This is a simple image that contain the requirement to backup an etcd omni instance to B2."
 LABEL org.opencontainers.image.licenses=WTFPL
 
@@ -20,12 +20,14 @@ COPY --from=builder /usr/local/bin/b2 /usr/local/bin/b2
 
 RUN apk add --no-cache bash gnupg xz
 
-RUN mkdir /scripts
+ENV PATH="$PATH:/scripts"
 
-COPY backup.sh /scripts/backup.sh
-RUN chmod +x /scripts/backup.sh
+WORKDIR /scripts
 
-COPY restore.sh /scripts/restore.sh
-RUN chmod +x /scripts/restore.sh
+COPY backup.sh backup
+RUN chmod +x backup
 
-ENTRYPOINT [ "/scripts/backup.sh" ]
+COPY restore.sh restore
+RUN chmod +x restore
+
+CMD [ "backup" ]
